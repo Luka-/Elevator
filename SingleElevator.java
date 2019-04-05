@@ -53,7 +53,7 @@ public class SingleElevator implements Runnable {
             while (nextFloorAvailable()) {
                 moveOneFloor(direction); // does the actual physical moving. I explicitly provide direction as an argument
                                          // because I'm assuming this goes out of Elevator class. I could make a wrapper though.
-                currentFloor++; 
+                currentFloor += (direction == Direction.UP) ? 1 : -1; 
                 if (called[direction].contains(currentFloor) || selectedFloor.contains(currentFloor)) {
                     // Stop, open doors, wait a little, close doors, delete current floor from selected floors/called.
                 }

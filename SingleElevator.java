@@ -35,19 +35,27 @@ public class SingleElevator implements Runnable {
 
     public void call(Integer floor, Direction direction) {
         called[direction].add(floor);
-      }
+        if (this.direction == Direction.NONE) this.direction = direction;
+    }
+
+    public void setDestination(Integer floor) {
+        if (floor == currentFloor) return;  
+        selectedFloors.add(floor);
+        if (direction == Direction.NONE) direction = (floor < currentFloor) ? Direction.DOWN : Direction.UP;
+    }
 
     public void run() {
         while (true) {
             
             if (!nextFloorAvailable()) direction = oppositeDirection();
+            if (!nextFloorAvailable()) direction = Direction.NONE;
             
             while (nextFloorAvailable()) {
                 moveOneFloor(direction); // does the actual physical moving. I explicitly provide direction as an argument
                                          // because I'm assuming this goes out of Elevator class. I could make a wrapper though.
                 currentFloor++; 
                 if (called[direction].contains(currentFloor) || selectedFloor.contains(currentFloor)) {
-                    // Stop, open doors, wait a little, close doors.
+                    // Stop, open doors, wait a little, close doors, delete current floor from selected floors/called.
                 }
             }
         }

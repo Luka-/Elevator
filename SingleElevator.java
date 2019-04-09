@@ -3,17 +3,21 @@ import java.util.TreeSet;
 
 public class SingleElevator implements Runnable {
 
+    int id;
     enum Direction{UP,DOWN,NONE};
     private Direction direction;
     private Integer currentFloor;
     private TreeSet<Integer> selectedFloors;
-    private TreeSet<Integer>[] called;
+    private ArrayList<TreeSet<Integer>> called;
 
-    public SingleElevator() {
+    public SingleElevator(int id) {
+        this.id = id;
         direction = Direction.NONE;
         currentFloor = Integer.valueOf(0);
-        selectedFloors = new Treeset<Integer>();
-        called = new TreeSet<Integer>[2];
+        selectedFloors = new TreeSet<Integer>();
+        called = new ArrayList<TreeSet<Integer>>(2);
+        called.add(new TreeSet<Integer>());
+        called.add(new TreeSet<Integer>());
     }
 
     public Direction oppositeDirection() {
@@ -21,21 +25,29 @@ public class SingleElevator implements Runnable {
         else return (direction == Direction.UP) ? Direction.DOWN : Direction.UP;
     }
 
-    bool nextFloorAvailable(Direction direction) {
+    boolean nextFloorAvailable() {
         if (direction == Direction.NONE) return false;
         else if (direction == Direction.UP) {
-            if (called[0].higher(currentFloor) != null) return true;
+            if (called.get(0).higher(currentFloor) != null) return true;
             return selectedFloors.higher(currentFloor) != null;
         }
         else if (direction == Direction.DOWN) {
-            if (called[1].lower(currentFloor) != null) return true;
+            if (called.get(1).lower(currentFloor) != null) return true;
             return selectedFloors.lower(currentFloor) != null;
         }
+        return false;
     }
 
-    public void call(Integer floor, Direction direction) {
-        called[direction].add(floor);
-        if (this.direction == Direction.NONE) this.direction = direction;
+    // 0 is up, 1 is down.
+    public void call(Integer floor, int direction) {
+        // System.out.println("Floor is: " + floor + ",direction is: " + direction + ", current dir="+this.direction.ordinal());
+        // System.out.println(called.size());
+        called.get(direction).add(floor);
+        if (this.direction == Direction.NONE && floor != currentFloor) this.direction = (floor < currentFloor) ? Direction.DOWN : Direction.UP;
+    }
+
+    public void removeCall(Integer floor) {
+        called.get(direction.ordinal()).remove(floor);
     }
 
     public void setDestination(Integer floor) {
@@ -44,20 +56,42 @@ public class SingleElevator implements Runnable {
         if (direction == Direction.NONE) direction = (floor < currentFloor) ? Direction.DOWN : Direction.UP;
     }
 
+    public void moveOneFloor() {
+        try {
+            currentFloor += (direction == Direction.UP) ? 1 : -1;
+            System.out.println("Elevator " + id + " on floor " + currentFloor+"!");
+            Thread.sleep(2000);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void run() {
         while (true) {
             
+            // System.out.println("currentdir = " + direction.ordinal());
             if (!nextFloorAvailable()) direction = oppositeDirection();
             if (!nextFloorAvailable()) direction = Direction.NONE;
-            
             while (nextFloorAvailable()) {
-                moveOneFloor(direction); // does the actual physical moving. I explicitly provide direction as an argument
-                                         // because I'm assuming this goes out of Elevator class. I could make a wrapper though.
-                currentFloor += (direction == Direction.UP) ? 1 : -1; 
-                if (called[direction].contains(currentFloor) || selectedFloor.contains(currentFloor)) {
+                moveOneFloor();
+                if (called.get(direction.ordinal()).contains(currentFloor) || selectedFloors.contains(currentFloor)) {
                     // Stop, open doors, wait a little, close doors, delete current floor from selected floors/called.
+                    System.out.println("Opening doors on floor " + currentFloor);
+                    try {
+                        Thread.sleep(3000);
+                        System.out.println("Closing doors!");
+                        removeCall(currentFloor);
+                        selectedFloors.remove(currentFloor);
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             }
+            // System.out.println(called.toString());
+            // System.out.println(selectedFloors.toString());
+            try{ Thread.sleep(5000); } catch (Exception e) { e.printStackTrace(); }
         }
     }
 }
